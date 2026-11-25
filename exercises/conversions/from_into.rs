@@ -40,10 +40,30 @@ impl Default for Person {
 // If while parsing the age, something goes wrong, then return the default of
 // Person Otherwise, then return an instantiated Person object with the results
 
-// I AM NOT DONE
-
 impl From<&str> for Person {
     fn from(s: &str) -> Person {
+        // Any malformed input falls back to the default John, so validate the
+        // whole shape (exactly two non-empty fields) before parsing the age.
+        let mut fields = s.split(',');
+        let name = match fields.next() {
+            Some(n) if !n.is_empty() => n,
+            _ => return Person::default(),
+        };
+        let age = match fields.next() {
+            Some(a) => a,
+            None => return Person::default(),
+        };
+        // A third field means the string is not "name,age" any more.
+        if fields.next().is_some() {
+            return Person::default();
+        }
+        match age.parse::<usize>() {
+            Ok(age) => Person {
+                name: name.to_string(),
+                age,
+            },
+            Err(_) => Person::default(),
+        }
     }
 }
 

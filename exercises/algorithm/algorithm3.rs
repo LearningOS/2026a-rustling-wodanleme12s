@@ -1,13 +1,52 @@
-/*
-	sort
-	This problem requires you to implement a sorting algorithm
-	you can use bubble sorting, insertion sorting, heap sorting, etc.
-*/
-// I AM NOT DONE
-
-fn sort<T>(array: &mut [T]){
-	//TODO
+/// In-place heap sort: build a max-heap bottom-up, then repeatedly swap the
+/// root (the maximum) to the end of the unsorted prefix and sift it back down.
+/// Chosen because it needs no scratch buffer and only `Ord` + swapping — the
+/// signature here has no `Default`/`Clone` bound to lean on.
+fn sort<T>(array: &mut [T])
+where
+    T: Ord,
+{
+    let n = array.len();
+    // Nodes past n/2 are leaves, so starting at n/2 - 1 and sifting each down
+    // turns the whole array into a max-heap in O(n).
+    for i in (0..n / 2).rev() {
+        sift_down(array, i, n);
+    }
+    // After each pass the tail holds the largest elements in final order, so the
+    // heap shrinks by one instead of the array growing.
+    for end in (1..n).rev() {
+        array.swap(0, end);
+        sift_down(array, 0, end);
+    }
 }
+
+/// Move the out-of-place value at `start` down to where it belongs, assuming the
+/// subtrees below it already satisfy the heap property over `array[..heap_len]`.
+fn sift_down<T>(array: &mut [T], mut start: usize, heap_len: usize)
+where
+    T: Ord,
+{
+    loop {
+        let left = 2 * start + 1;
+        if left >= heap_len {
+            return;
+        }
+        // Pick the larger child. `left + 1` is only a valid index when the right
+        // child exists, hence the explicit bound instead of slicing.
+        let right = left + 1;
+        let biggest_child = if right < heap_len && array[right] > array[left] {
+            right
+        } else {
+            left
+        };
+        if array[start] >= array[biggest_child] {
+            return;
+        }
+        array.swap(start, biggest_child);
+        start = biggest_child;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

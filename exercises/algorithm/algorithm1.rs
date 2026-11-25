@@ -2,7 +2,6 @@
 	single linked list merge
 	This problem requires you to merge two ordered singly linked lists into one ordered singly linked list
 */
-// I AM NOT DONE
 
 use std::fmt::{self, Display, Formatter};
 use std::ptr::NonNull;
@@ -69,15 +68,53 @@ impl<T> LinkedList<T> {
             },
         }
     }
-	pub fn merge(list_a:LinkedList<T>,list_b:LinkedList<T>) -> Self
-	{
-		//TODO
-		Self {
-            length: 0,
-            start: None,
-            end: None,
+
+    /// Merge by relinking the two existing chains: no allocation and no clone of
+    /// `T`. Each node of `tail` is spliced in front of the first `head` node that
+    /// compares greater, so `tail`'s chain is consumed from its head forwards.
+    /// The walk stops as soon as `tail` is empty — whatever is left of `head` is
+    /// already ordered behind the last grafted node.
+    pub fn merge(mut head: LinkedList<T>, mut tail: LinkedList<T>) -> Self
+    where
+        T: PartialOrd,
+    {
+        let mut cursor = head.start; // next `head` node, not yet placed
+        let mut prev: Option<NonNull<Node<T>>> = None; // last node already placed
+        let mut rest = tail.start;
+
+        unsafe {
+            while let Some(t_ptr) = rest {
+                rest = (*t_ptr.as_ptr()).next; // consume tail's head
+                // Skip every `head` value that belongs before t_ptr. `prev` has
+                // to advance even when cursor never moves, otherwise the node we
+                // grafted in the previous round gets overwritten again.
+                while let Some(c) = cursor {
+                    if (*c.as_ptr()).val > (*t_ptr.as_ptr()).val {
+                        break;
+                    }
+                    prev = cursor;
+                    cursor = (*c.as_ptr()).next;
+                }
+                (*t_ptr.as_ptr()).next = cursor;
+                match prev {
+                    Some(p) => (*p.as_ptr()).next = Some(t_ptr),
+                    None => head.start = Some(t_ptr), // t_ptr is the new minimum
+                }
+                prev = Some(t_ptr);
+            }
+            if cursor.is_none() {
+                head.end = tail.end;
+            }
         }
-	}
+
+        head.length += tail.length;
+        // The nodes now belong to `head`; empty `tail` so it can't be walked or
+        // freed a second time (it owns nothing anymore).
+        tail.start = None;
+        tail.end = None;
+        tail.length = 0;
+        head
+    }
 }
 
 impl<T> Display for LinkedList<T>

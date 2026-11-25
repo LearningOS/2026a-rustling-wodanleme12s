@@ -3,8 +3,6 @@
 // Execute `rustlings hint threads3` or use the `hint` watch subcommand for a
 // hint.
 
-// I AM NOT DONE
-
 use std::sync::mpsc;
 use std::sync::Arc;
 use std::thread;
@@ -31,21 +29,30 @@ fn send_tx(q: Queue, tx: mpsc::Sender<u32>) -> () {
     let qc1 = Arc::clone(&qc);
     let qc2 = Arc::clone(&qc);
 
-    thread::spawn(move || {
+    // A channel closes only when every Sender is dropped, so each producer gets
+    // its own clone; otherwise the first thread's sender would be moved into the
+    // second spawn and the receiver would never see the last values.
+    let tx1 = tx.clone();
+    let first = thread::spawn(move || {
         for val in &qc1.first_half {
             println!("sending {:?}", val);
-            tx.send(*val).unwrap();
+            tx1.send(*val).unwrap();
             thread::sleep(Duration::from_secs(1));
         }
     });
 
-    thread::spawn(move || {
+    let second = thread::spawn(move || {
         for val in &qc2.second_half {
             println!("sending {:?}", val);
             tx.send(*val).unwrap();
             thread::sleep(Duration::from_secs(1));
         }
     });
+
+    // Joining here keeps `send_tx` alive until both producers are done; dropping
+    // the last Sender (the one owned by this frame) is what ends main's loop.
+    first.join().unwrap();
+    second.join().unwrap();
 }
 
 fn main() {

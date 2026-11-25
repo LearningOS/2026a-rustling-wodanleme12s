@@ -2,7 +2,6 @@
 	heap
 	This question requires you to implement a binary heap function
 */
-// I AM NOT DONE
 
 use std::cmp::Ord;
 use std::default::Default;
@@ -37,7 +36,21 @@ where
     }
 
     pub fn add(&mut self, value: T) {
-        //TODO
+        // items[0] is the Default placeholder, so index 1 is the root. Push at the
+        // end (the first free leaf) and bubble up while the parent loses to it.
+        self.items.push(value);
+        self.count += 1;
+
+        let mut idx = self.count;
+        while idx > 1 {
+            let parent = self.parent_idx(idx);
+            if (self.comparator)(&self.items[idx], &self.items[parent]) {
+                self.items.swap(idx, parent);
+                idx = parent;
+            } else {
+                break;
+            }
+        }
     }
 
     fn parent_idx(&self, idx: usize) -> usize {
@@ -57,8 +70,16 @@ where
     }
 
     fn smallest_child_idx(&self, idx: usize) -> usize {
-        //TODO
-		0
+        // "smallest" means the child the comparator prefers, i.e. the one that
+        // should take idx's place during a sift-down. A missing right child (or a
+        // right child that loses) leaves the left one.
+        let left = self.left_child_idx(idx);
+        let right = self.right_child_idx(idx);
+        if right <= self.count && (self.comparator)(&self.items[right], &self.items[left]) {
+            right
+        } else {
+            left
+        }
     }
 }
 
@@ -84,8 +105,29 @@ where
     type Item = T;
 
     fn next(&mut self) -> Option<T> {
-        //TODO
-		None
+        if self.is_empty() {
+            return None;
+        }
+        // The root is the item the comparator likes best. Swap it with the last
+        // real element so the value we hand out sits at the end of the Vec: after
+        // pop() the count and the capacity stay in step, which keeps index
+        // `count` (the next push's slot) inside the placeholder-padded Vec.
+        self.items.swap(1, self.count);
+        let top = self.items.pop();
+        self.count -= 1;
+
+        let mut idx = 1;
+        while self.children_present(idx) {
+            let child = self.smallest_child_idx(idx);
+            if (self.comparator)(&self.items[child], &self.items[idx]) {
+                self.items.swap(idx, child);
+                idx = child;
+            } else {
+                break;
+            }
+        }
+
+        top
     }
 }
 

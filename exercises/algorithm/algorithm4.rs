@@ -3,7 +3,6 @@
 	This problem requires you to implement a basic interface for a binary tree
 */
 
-//I AM NOT DONE
 use std::cmp::Ordering;
 use std::fmt::Debug;
 
@@ -50,13 +49,25 @@ where
 
     // Insert a value into the BST
     fn insert(&mut self, value: T) {
-        //TODO
+        match &mut self.root {
+            Some(root) => root.insert(value),
+            None => self.root = Some(Box::new(TreeNode::new(value))),
+        }
     }
 
     // Search for a value in the BST
     fn search(&self, value: T) -> bool {
-        //TODO
-        true
+        // Iterative descent: `Option` narrows the borrow on each step, so no
+        // recursion and no clone of `T` is needed.
+        let mut cursor = self.root.as_deref();
+        while let Some(node) = cursor {
+            cursor = match value.cmp(&node.value) {
+                Ordering::Equal => return true,
+                Ordering::Less => node.left.as_deref(),
+                Ordering::Greater => node.right.as_deref(),
+            };
+        }
+        false
     }
 }
 
@@ -66,7 +77,18 @@ where
 {
     // Insert a node into the tree
     fn insert(&mut self, value: T) {
-        //TODO
+        match value.cmp(&self.value) {
+            Ordering::Less => match &mut self.left {
+                Some(child) => child.insert(value),
+                None => self.left = Some(Box::new(TreeNode::new(value))),
+            },
+            // Duplicates are ignored: the tests expect the tree to stay a set.
+            Ordering::Greater => match &mut self.right {
+                Some(child) => child.insert(value),
+                None => self.right = Some(Box::new(TreeNode::new(value))),
+            },
+            Ordering::Equal => {}
+        }
     }
 }
 
@@ -121,6 +143,4 @@ mod tests {
             None => panic!("Root should not be None after insertion"),
         }
     }
-}    
-
-
+}

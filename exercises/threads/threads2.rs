@@ -7,9 +7,7 @@
 // Execute `rustlings hint threads2` or use the `hint` watch subcommand for a
 // hint.
 
-// I AM NOT DONE
-
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
@@ -18,22 +16,30 @@ struct JobStatus {
 }
 
 fn main() {
-    let status = Arc::new(JobStatus { jobs_completed: 0 });
+    // Arc alone shares ownership across threads but gives no interior
+    // mutability; Mutex is what makes the counter writable (and serialises the
+    // increments so no update is lost).
+    let status = Arc::new(Mutex::new(JobStatus { jobs_completed: 0 }));
     let mut handles = vec![];
     for _ in 0..10 {
         let status_shared = Arc::clone(&status);
         let handle = thread::spawn(move || {
             thread::sleep(Duration::from_millis(250));
-            // TODO: You must take an action before you update a shared value
-            status_shared.jobs_completed += 1;
+            // Take the lock before touching the shared value. The guard is
+            // dropped at the end of this statement, releasing the lock.
+            let mut guard = status_shared.lock().unwrap();
+            guard.jobs_completed += 1;
         });
         handles.push(handle);
     }
     for handle in handles {
         handle.join().unwrap();
-        // TODO: Print the value of the JobStatus.jobs_completed. Did you notice
-        // anything interesting in the output? Do you have to 'join' on all the
-        // handles?
-        println!("jobs completed {}", ???);
+        // Joining all the handles is what guarantees the count only grows to 10
+        // after every worker has finished; printing before joining would show a
+        // partially completed number.
+        println!(
+            "jobs completed {}",
+            status.lock().unwrap().jobs_completed
+        );
     }
 }

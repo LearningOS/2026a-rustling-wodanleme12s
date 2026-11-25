@@ -9,15 +9,17 @@
 // Execute `rustlings hint clippy1` or use the `hint` watch subcommand for a
 // hint.
 
-// I AM NOT DONE
-
 use std::f32;
 
 fn main() {
-    let pi = 3.14f32;
+    // clippy::approx_constant rejects a hand-written 3.14 because it only
+    // pretends to be pi; std::f32::consts carries the full-precision value.
+    let pi = f32::consts::PI;
     let radius = 5.00f32;
 
-    let area = pi * f32::powi(radius, 2);
+    // powi is an inherent method on f32, so calling it through the type path
+    // trips clippy::unnecessary_operation-style complaints; use method syntax.
+    let area = pi * radius.powi(2);
 
     println!(
         "The area of a circle with radius {:.2} is {:.5}!",

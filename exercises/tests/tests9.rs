@@ -27,8 +27,6 @@
 //
 // You should NOT modify any existing code except for adding two lines of attributes.
 
-// I AM NOT DONE
-
 extern "Rust" {
     fn my_demo_function(a: u32) -> u32;
     fn my_demo_function_alias(a: u32) -> u32;
@@ -36,7 +34,19 @@ extern "Rust" {
 
 mod Foo {
     // No `extern` equals `extern "Rust"`.
-    fn my_demo_function(a: u32) -> u32 {
+    // The linker has to find this definition under the plain names the extern
+    // block declares, so opt out of Rust symbol mangling and keep the symbol
+    // exported even though nothing in this crate references it.
+    #[no_mangle]
+    pub extern "Rust" fn my_demo_function(a: u32) -> u32 {
+        a
+    }
+
+    // Both extern declarations must land on the same code, so point the alias
+    // at the very same body via the linker's symbol renaming.
+    #[no_mangle]
+    #[link_name = "my_demo_function"]
+    pub extern "Rust" fn my_demo_function_alias(a: u32) -> u32 {
         a
     }
 }

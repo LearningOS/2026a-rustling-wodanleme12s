@@ -16,18 +16,24 @@
 //
 // Execute `rustlings hint quiz3` or use the `hint` watch subcommand for a hint.
 
-// I AM NOT DONE
+use std::fmt::Display;
 
-pub struct ReportCard {
-    pub grade: f32,
+// grade was hard-coded to f32, which is why an "A+" could not be stored. Make
+// the struct generic over the grade type instead.
+pub struct ReportCard<T> {
+    pub grade: T,
     pub student_name: String,
     pub student_age: u8,
 }
 
-impl ReportCard {
+// print() only needs to render the grade, so bound T on Display rather than
+// requiring any specific numeric type. f32 and &str both satisfy it.
+impl<T: Display> ReportCard<T> {
     pub fn print(&self) -> String {
-        format!("{} ({}) - achieved a grade of {}",
-            &self.student_name, &self.student_age, &self.grade)
+        format!(
+            "{} ({}) - achieved a grade of {}",
+            &self.student_name, &self.student_age, &self.grade
+        )
     }
 }
 
@@ -50,9 +56,10 @@ mod tests {
 
     #[test]
     fn generate_alphabetic_report_card() {
-        // TODO: Make sure to change the grade here after you finish the exercise.
+        // The exercise asks us to switch this grade to an alphabetical one; the
+        // generic struct now accepts &str without any further change.
         let report_card = ReportCard {
-            grade: 2.1,
+            grade: "A+",
             student_name: "Gary Plotter".to_string(),
             student_age: 11,
         };
